@@ -4,6 +4,7 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.graphics.PixelFormat
+import android.hardware.camera2.CameraManager
 import android.media.AudioManager
 import android.os.Build
 import android.os.IBinder
@@ -19,6 +20,9 @@ class FloatingVolumeService : Service() {
     private lateinit var windowManager: WindowManager
     private lateinit var floatingView: View
     private lateinit var params: WindowManager.LayoutParams
+    private lateinit var cameraManager: CameraManager
+    private lateinit var cameraId: String
+    private var isFlashlightOn = false
 
     override fun onBind(intent: Intent?): IBinder? {
         return null
@@ -51,9 +55,13 @@ class FloatingVolumeService : Service() {
         windowManager.addView(floatingView, params)
 
         val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
+        cameraId = cameraManager.cameraIdList[0]
+
 
         val volumeUpButton = floatingView.findViewById<Button>(R.id.floating_volume_up_button)
         val volumeDownButton = floatingView.findViewById<Button>(R.id.floating_volume_down_button)
+        val flashlightButton = floatingView.findViewById<Button>(R.id.floating_flashlight_button)
 
         volumeUpButton.setOnClickListener {
             audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_RAISE, AudioManager.FLAG_SHOW_UI)
@@ -61,6 +69,15 @@ class FloatingVolumeService : Service() {
 
         volumeDownButton.setOnClickListener {
             audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_LOWER, AudioManager.FLAG_SHOW_UI)
+        }
+
+        flashlightButton.setOnClickListener {
+            try {
+                isFlashlightOn = !isFlashlightOn
+                cameraManager.setTorchMode(cameraId, isFlashlightOn)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
 
         floatingView.setOnTouchListener(object : View.OnTouchListener {

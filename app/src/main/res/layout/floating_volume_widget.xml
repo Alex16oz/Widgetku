@@ -16,7 +16,7 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:background="@drawable/round_button"
-            android:text="+"
+            android:text="🔊"
             android:textSize="20sp"
             android:textColor="@android:color/white" />
 
@@ -26,10 +26,19 @@
             android:layout_height="48dp"
             android:layout_marginTop="8dp"
             android:background="@drawable/round_button"
-            android:text="-"
+            android:text="🔉"
             android:textSize="20sp"
             android:textColor="@android:color/white" />
 
+        <Button
+            android:id="@+id/floating_flashlight_button"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/round_button"
+            android:text="☀️"
+            android:textSize="20sp"
+            android:textColor="@android:color/white" />
 
     </LinearLayout>
 </FrameLayout>
