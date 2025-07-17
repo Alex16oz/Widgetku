@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Widgetku</string>
+    <string name="app_widget_description">Atur Volume</string>
 </resources>
