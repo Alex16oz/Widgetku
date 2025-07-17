@@ -14,6 +14,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.widget.Button
+import android.widget.SeekBar
 
 class FloatingVolumeService : Service() {
 
@@ -23,6 +24,7 @@ class FloatingVolumeService : Service() {
     private lateinit var cameraManager: CameraManager
     private lateinit var cameraId: String
     private var isFlashlightOn = false
+    private lateinit var audioManager: AudioManager
 
     override fun onBind(intent: Intent?): IBinder? {
         return null
@@ -54,21 +56,44 @@ class FloatingVolumeService : Service() {
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         windowManager.addView(floatingView, params)
 
-        val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
         cameraId = cameraManager.cameraIdList[0]
-
 
         val volumeUpButton = floatingView.findViewById<Button>(R.id.floating_volume_up_button)
         val volumeDownButton = floatingView.findViewById<Button>(R.id.floating_volume_down_button)
         val flashlightButton = floatingView.findViewById<Button>(R.id.floating_flashlight_button)
+        val volumeSeekBar = floatingView.findViewById<SeekBar>(R.id.volume_seekbar)
+
+        // Atur volume SeekBar
+        val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+        val currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+        volumeSeekBar.max = maxVolume
+        volumeSeekBar.progress = currentVolume
+
+        volumeSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) {
+                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, progress, 0)
+                }
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
+
 
         volumeUpButton.setOnClickListener {
             audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_RAISE, AudioManager.FLAG_SHOW_UI)
+            // Perbarui progress bar saat tombol ditekan
+            volumeSeekBar.progress = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
         }
 
         volumeDownButton.setOnClickListener {
             audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_LOWER, AudioManager.FLAG_SHOW_UI)
+            // Perbarui progress bar saat tombol ditekan
+            volumeSeekBar.progress = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
         }
 
         flashlightButton.setOnClickListener {
