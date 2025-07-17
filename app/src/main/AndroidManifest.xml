@@ -6,6 +6,7 @@
     <uses-feature android:name="android.hardware.camera" />
     <uses-feature android:name="android.hardware.camera.flash"
         android:required="false" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
     <application
         android:allowBackup="true"
@@ -39,7 +40,7 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/volume_widget_info" />
         </receiver>
+        <service android:name=".FloatingVolumeService" />
     </application>
-
 
 </manifest>

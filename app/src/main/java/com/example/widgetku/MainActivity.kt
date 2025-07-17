@@ -1,8 +1,10 @@
 package com.example.widgetku
 
 import android.content.Context
+import android.content.Intent
 import android.hardware.camera2.CameraManager
 import android.media.AudioManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -40,9 +42,11 @@ import com.example.widgetku.ui.theme.WidgetkuTheme
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        checkOverlayPermission()
         enableEdgeToEdge()
         setContent {
             WidgetkuTheme {
@@ -89,9 +93,35 @@ class MainActivity : ComponentActivity() {
                             VolumeButtons()
                             Spacer(modifier = Modifier.height(16.dp))
                             FlashlightButton()
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(onClick = {
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                                    if (android.provider.Settings.canDrawOverlays(this@MainActivity)) {
+                                        startService(Intent(this@MainActivity, FloatingVolumeService::class.java))
+                                    } else {
+                                        checkOverlayPermission()
+                                    }
+                                } else {
+                                    startService(Intent(this@MainActivity, FloatingVolumeService::class.java))
+                                }
+                            }) {
+                                Text("Show Floating Widget")
+                            }
                         }
                     }
                 }
+            }
+        }
+    }
+
+    private fun checkOverlayPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (!android.provider.Settings.canDrawOverlays(this)) {
+                val intent = Intent(
+                    android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    android.net.Uri.parse("package:$packageName")
+                )
+                startActivityForResult(intent, 0)
             }
         }
     }
