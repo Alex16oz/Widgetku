@@ -1,22 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:gravity="center"
-    android:background="@android:color/transparent"
-    android:padding="8dp">
+    android:background="@drawable/oval_background">
 
-    <Button
-        android:id="@+id/floating_volume_down_button"
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="-" />
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:padding="10dp">
 
-    <Button
-        android:id="@+id/floating_volume_up_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="+" />
+        <Button
+            android:id="@+id/floating_volume_down_button"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/round_button"
+            android:text="-"
+            android:textColor="@android:color/white"/>
 
-</LinearLayout>
+        <Button
+            android:id="@+id/floating_volume_up_button"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="16dp"
+            android:background="@drawable/round_button"
+            android:text="+"
+            android:textColor="@android:color/white"/>
+
+    </LinearLayout>
+</FrameLayout>
