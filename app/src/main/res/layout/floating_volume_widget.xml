@@ -9,7 +9,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center"
-        android:padding="16dp">
+        android:padding="1dp">
 
         <SeekBar
             android:id="@+id/volume_seekbar"
@@ -23,7 +23,7 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:gravity="center"
-            android:layout_marginStart="16dp">
+            android:layout_marginStart="8dp">
 
             <Button
                 android:id="@+id/floating_volume_up_button"
