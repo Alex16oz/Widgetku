@@ -4,6 +4,8 @@ import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -18,6 +20,7 @@ import android.util.DisplayMetrics
 import android.view.*
 import android.widget.Button
 import android.widget.SeekBar
+import androidx.core.app.NotificationCompat
 import kotlin.math.abs
 
 class FloatingVolumeService : Service() {
@@ -46,12 +49,22 @@ class FloatingVolumeService : Service() {
     companion object {
         private const val INACTIVITY_TIMEOUT = 4000L
         private const val BUTTON_FADE_TIMEOUT = 2000L
+        private const val NOTIFICATION_CHANNEL_ID = "FloatingVolumeServiceChannel"
+        private const val NOTIFICATION_ID = 1
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
+        createNotificationChannel()
+        val notification = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
+            .setContentTitle("Floating Volume Widget")
+            .setContentText("Widget is active")
+            .setSmallIcon(R.drawable.ic_launcher_foreground) // Anda dapat mengganti ikon ini
+            .build()
+        startForeground(NOTIFICATION_ID, notification)
+
         setupWindowManager()
         setupViews()
         setupSystemServices()
@@ -59,6 +72,22 @@ class FloatingVolumeService : Service() {
         setupMainWidgetListeners()
         windowManager.addView(floatingButtonView, paramsButton)
         startFadeOutTimer() // Mulai timer fade out saat service dibuat
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        return START_STICKY
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val serviceChannel = NotificationChannel(
+                NOTIFICATION_CHANNEL_ID,
+                "Floating Volume Service Channel",
+                NotificationManager.IMPORTANCE_DEFAULT
+            )
+            val manager = getSystemService(NotificationManager::class.java)
+            manager.createNotificationChannel(serviceChannel)
+        }
     }
 
     private fun setupWindowManager() {

@@ -97,7 +97,12 @@ class MainActivity : ComponentActivity() {
                             Button(onClick = {
                                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                                     if (android.provider.Settings.canDrawOverlays(this@MainActivity)) {
-                                        startService(Intent(this@MainActivity, FloatingVolumeService::class.java))
+                                        val intent = Intent(this@MainActivity, FloatingVolumeService::class.java)
+                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                            startForegroundService(intent)
+                                        } else {
+                                            startService(intent)
+                                        }
                                     } else {
                                         checkOverlayPermission()
                                     }
