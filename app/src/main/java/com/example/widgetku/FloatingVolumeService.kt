@@ -3,6 +3,7 @@ package com.example.widgetku
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
+import android.annotation.SuppressLint
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -35,14 +36,16 @@ class FloatingVolumeService : Service() {
     // Handler untuk menutup widget utama saat tidak aktif
     private val inactivityHandler = Handler(Looper.getMainLooper())
     private val inactivityRunnable = Runnable { hideMainWidget() }
-    private val INACTIVITY_TIMEOUT = 4000L
 
     // Handler untuk membuat tombol semi-transparan (fade out)
     private val buttonFadeHandler = Handler(Looper.getMainLooper())
     private val buttonFadeRunnable = Runnable { fadeOutButton() }
-    private val BUTTON_FADE_TIMEOUT = 2000L
     private var isButtonFaded = false
 
+    companion object {
+        private const val INACTIVITY_TIMEOUT = 4000L
+        private const val BUTTON_FADE_TIMEOUT = 2000L
+    }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -59,11 +62,7 @@ class FloatingVolumeService : Service() {
 
     private fun setupWindowManager() {
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-        val layoutFlag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-        } else {
-            WindowManager.LayoutParams.TYPE_PHONE
-        }
+        val layoutFlag = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
 
         // Parameter untuk tombol ikon floating
         paramsButton = WindowManager.LayoutParams(
@@ -94,6 +93,7 @@ class FloatingVolumeService : Service() {
         }
     }
 
+    @SuppressLint("InflateParams")
     private fun setupViews() {
         val inflater = LayoutInflater.from(this)
         floatingButtonView = inflater.inflate(R.layout.floating_button, null)
@@ -106,6 +106,7 @@ class FloatingVolumeService : Service() {
         cameraId = cameraManager.cameraIdList[0]
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     private fun setupFloatingButtonTouchListener() {
         val actionButton = floatingButtonView.findViewById<Button>(R.id.floating_widget_button)
 
@@ -165,6 +166,7 @@ class FloatingVolumeService : Service() {
         }
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     private fun setupMainWidgetListeners() {
         val volumeUpButton = floatingWidgetView.findViewById<Button>(R.id.floating_volume_up_button)
         val volumeDownButton = floatingWidgetView.findViewById<Button>(R.id.floating_volume_down_button)
@@ -217,6 +219,10 @@ class FloatingVolumeService : Service() {
             private var initialY: Int = 0
             private var initialTouchX: Float = 0f
             private var initialTouchY: Float = 0f
+            private var touchDownTime: Long = 0
+
+            private val MAX_CLICK_DURATION = 200
+            private val MAX_CLICK_DISTANCE = 15
 
             override fun onTouch(v: View, event: MotionEvent): Boolean {
                 if (event.action == MotionEvent.ACTION_OUTSIDE) {
@@ -232,6 +238,7 @@ class FloatingVolumeService : Service() {
                         initialY = paramsWidget.y
                         initialTouchX = event.rawX
                         initialTouchY = event.rawY
+                        touchDownTime = System.currentTimeMillis()
                         return true
                     }
                     MotionEvent.ACTION_MOVE -> {
@@ -240,10 +247,23 @@ class FloatingVolumeService : Service() {
                         windowManager.updateViewLayout(floatingWidgetView, paramsWidget)
                         return true
                     }
+                    MotionEvent.ACTION_UP -> {
+                        val clickDuration = System.currentTimeMillis() - touchDownTime
+                        val xDistance = abs(event.rawX - initialTouchX)
+                        val yDistance = abs(event.rawY - initialTouchY)
+                        if (clickDuration < MAX_CLICK_DURATION && xDistance < MAX_CLICK_DISTANCE && yDistance < MAX_CLICK_DISTANCE) {
+                            v.performClick()
+                        }
+                        return true
+                    }
                 }
                 return false
             }
         })
+        // Tambahkan ini untuk memenuhi aturan aksesibilitas
+        floatingWidgetView.setOnClickListener {
+            resetInactivityTimer()
+        }
     }
 
     private fun showMainWidget() {
