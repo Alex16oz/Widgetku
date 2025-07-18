@@ -1,5 +1,8 @@
 package com.example.widgetku
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ValueAnimator
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -31,7 +34,16 @@ class FloatingVolumeService : Service() {
     // Handler untuk menutup widget saat tidak aktif
     private val inactivityHandler = Handler(Looper.getMainLooper())
     private val inactivityRunnable = Runnable { hideMainWidget() }
-    private val INACTIVITY_TIMEOUT = 5000L // 5 detik
+    private val INACTIVITY_TIMEOUT = 4000L //
+
+    // --- PERUBAHAN BARU ---
+    // Handler untuk membuat tombol semi-transparan
+    private val buttonFadeHandler = Handler(Looper.getMainLooper())
+    private val buttonFadeRunnable = Runnable { fadeOutButton() }
+    private val BUTTON_FADE_TIMEOUT = 2000L //
+    private var isButtonFaded = false
+    // --- AKHIR PERUBAHAN BARU ---
+
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -43,6 +55,9 @@ class FloatingVolumeService : Service() {
         setupFloatingButtonTouchListener()
         setupMainWidgetListeners()
         windowManager.addView(floatingButtonView, paramsButton)
+        // --- PERUBAHAN BARU ---
+        startFadeOutTimer() // Mulai timer saat service dibuat
+        // --- AKHIR PERUBAHAN BARU ---
     }
 
     private fun setupWindowManager() {
@@ -53,7 +68,6 @@ class FloatingVolumeService : Service() {
             WindowManager.LayoutParams.TYPE_PHONE
         }
 
-        // Params untuk tombol ikon
         paramsButton = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
@@ -66,14 +80,10 @@ class FloatingVolumeService : Service() {
             y = 100
         }
 
-        // --- PERBAIKAN BUG DI SINI ---
-        // Params untuk widget utama
         paramsWidget = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             layoutFlag,
-            // Kombinasi flag ini akan mengabaikan sentuhan di luar area widget,
-            // namun tetap mendeteksi klik di luar untuk menutup.
             WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
                     WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH or
                     WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
@@ -111,6 +121,11 @@ class FloatingVolumeService : Service() {
             private val MAX_CLICK_DISTANCE = 15
 
             override fun onTouch(v: View, event: MotionEvent): Boolean {
+                // --- PERUBAHAN BARU ---
+                resetFadeOutTimer() // Reset timer setiap ada interaksi
+                fadeInButton()      // Kembalikan tampilan tombol ke normal
+                // --- AKHIR PERUBAHAN BARU ---
+
                 when (event.action) {
                     MotionEvent.ACTION_DOWN -> {
                         touchDownTime = System.currentTimeMillis()
@@ -192,7 +207,6 @@ class FloatingVolumeService : Service() {
             }
         }
 
-        // Touch listener untuk widget utama agar bisa digeser
         floatingWidgetView.setOnTouchListener(object : View.OnTouchListener {
             private var initialX: Int = 0
             private var initialY: Int = 0
@@ -230,6 +244,11 @@ class FloatingVolumeService : Service() {
     private fun showMainWidget() {
         if (isWidgetVisible) return
         try {
+            // --- PERUBAHAN BARU ---
+            cancelFadeOutTimer() // Hentikan timer fade saat widget utama muncul
+            fadeInButton() // Pastikan tombol dalam keadaan normal
+            // --- AKHIR PERUBAHAN BARU ---
+
             paramsWidget.x = paramsButton.x
             paramsWidget.y = paramsButton.y
 
@@ -255,6 +274,9 @@ class FloatingVolumeService : Service() {
             windowManager.addView(floatingButtonView, paramsButton)
             isWidgetVisible = false
             cancelInactivityTimer()
+            // --- PERUBAHAN BARU ---
+            startFadeOutTimer() // Mulai lagi timer fade setelah widget ditutup
+            // --- AKHIR PERUBAHAN BARU ---
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -273,9 +295,62 @@ class FloatingVolumeService : Service() {
         inactivityHandler.removeCallbacks(inactivityRunnable)
     }
 
+    // --- FUNGSI BARU ---
+    private fun startFadeOutTimer() {
+        buttonFadeHandler.postDelayed(buttonFadeRunnable, BUTTON_FADE_TIMEOUT)
+    }
+
+    private fun resetFadeOutTimer() {
+        buttonFadeHandler.removeCallbacks(buttonFadeRunnable)
+        buttonFadeHandler.postDelayed(buttonFadeRunnable, BUTTON_FADE_TIMEOUT)
+    }
+
+    private fun cancelFadeOutTimer() {
+        buttonFadeHandler.removeCallbacks(buttonFadeRunnable)
+    }
+
+    private fun fadeOutButton() {
+        if (isButtonFaded || floatingButtonView.parent == null) return
+        isButtonFaded = true
+
+        val animator = ValueAnimator.ofFloat(1f, 0.5f).apply {
+            duration = 500 // durasi animasi 0.5 detik
+            addUpdateListener {
+                val value = it.animatedValue as Float
+                floatingButtonView.alpha = value
+                floatingButtonView.scaleX = value
+                floatingButtonView.scaleY = value
+                windowManager.updateViewLayout(floatingButtonView, paramsButton)
+            }
+        }
+        animator.start()
+    }
+
+    private fun fadeInButton() {
+        if (!isButtonFaded || floatingButtonView.parent == null) return
+        isButtonFaded = false
+
+        val animator = ValueAnimator.ofFloat(0.5f, 1f).apply {
+            duration = 500 // durasi animasi 0.5 detik
+            addUpdateListener {
+                val value = it.animatedValue as Float
+                floatingButtonView.alpha = value
+                floatingButtonView.scaleX = value
+                floatingButtonView.scaleY = value
+                windowManager.updateViewLayout(floatingButtonView, paramsButton)
+            }
+        }
+        animator.start()
+    }
+    // --- AKHIR FUNGSI BARU ---
+
+
     override fun onDestroy() {
         super.onDestroy()
         cancelInactivityTimer()
+        // --- PERUBAHAN BARU ---
+        cancelFadeOutTimer()
+        // --- AKHIR PERUBAHAN BARU ---
         try {
             if (this::windowManager.isInitialized) {
                 if (floatingButtonView.isAttachedToWindow) windowManager.removeView(floatingButtonView)
