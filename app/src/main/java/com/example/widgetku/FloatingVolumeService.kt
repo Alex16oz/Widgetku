@@ -32,6 +32,7 @@ class FloatingVolumeService : Service() {
     private lateinit var cameraId: String
     private var isFlashlightOn = false
     private var isWidgetVisible = false
+    private var isInteracting = false // Flag untuk interaksi pengguna
 
     // Handler untuk menutup widget utama saat tidak aktif
     private val inactivityHandler = Handler(Looper.getMainLooper())
@@ -127,6 +128,7 @@ class FloatingVolumeService : Service() {
 
                 when (event.action) {
                     MotionEvent.ACTION_DOWN -> {
+                        isInteracting = true // Pengguna mulai berinteraksi
                         touchDownTime = System.currentTimeMillis()
                         initialX = paramsButton.x
                         initialY = paramsButton.y
@@ -141,6 +143,7 @@ class FloatingVolumeService : Service() {
                         return true
                     }
                     MotionEvent.ACTION_UP -> {
+                        isInteracting = false // Pengguna selesai berinteraksi
                         val clickDuration = System.currentTimeMillis() - touchDownTime
                         val xDistance = abs(event.rawX - initialTouchX)
                         val yDistance = abs(event.rawY - initialTouchY)
@@ -341,13 +344,13 @@ class FloatingVolumeService : Service() {
                 floatingButtonView.alpha = value
                 floatingButtonView.scaleX = value
                 floatingButtonView.scaleY = value
-                // TIDAK PERLU updateViewLayout di sini karena hanya mengubah properti view
             }
             // Setelah fade out, jalankan animasi ke tepi layar
             addListener(object : AnimatorListenerAdapter() {
                 override fun onAnimationEnd(animation: Animator) {
                     super.onAnimationEnd(animation)
-                    if (floatingButtonView.isAttachedToWindow) {
+                    // Periksa apakah view masih ada DAN tidak ada interaksi
+                    if (floatingButtonView.isAttachedToWindow && !isInteracting) {
                         animateToEdge()
                     }
                 }
@@ -368,7 +371,6 @@ class FloatingVolumeService : Service() {
                 floatingButtonView.alpha = value
                 floatingButtonView.scaleX = value
                 floatingButtonView.scaleY = value
-                // TIDAK PERLU updateViewLayout di sini
             }
         }
         animator.start()
